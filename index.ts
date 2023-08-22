@@ -1,4 +1,4 @@
-import { Observable, ObservableInput, RepeatConfig, defer, from, repeat, tap } from "rxjs";
+import { Observable, ObservableInput, RepeatConfig, defer, repeat, tap } from "rxjs";
 
 export function loop<T>(
   factory:(index:number) => ObservableInput<T>,
