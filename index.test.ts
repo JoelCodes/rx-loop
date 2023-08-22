@@ -1,4 +1,4 @@
-import { Subject } from "rxjs";
+import { Subject, of } from "rxjs";
 import { loop, loopScan } from ".";
 
 describe('loop', () => {
@@ -25,7 +25,7 @@ describe('loop', () => {
     expect(error).not.toHaveBeenCalled();
     
   });
-  it('when a generated observable ends, it calls the factory function with an incremented index', () => {
+  it('when a generated observable ends, calls the factory function with an incremented index', () => {
     const subj1 = new Subject();
     const subj2 = new Subject();
     const next = jest.fn();
@@ -50,7 +50,7 @@ describe('loop', () => {
     expect(complete).not.toHaveBeenCalled();
     expect(error).not.toHaveBeenCalled();
   });
-  it('when a generated observable errors, it errors the observable', () => {
+  it('when a generated observable errors, errors the observable', () => {
     const subj1 = new Subject();
     const next = jest.fn();
     const complete = jest.fn();
@@ -67,7 +67,26 @@ describe('loop', () => {
     expect(next).not.toHaveBeenCalled();
     expect(complete).not.toHaveBeenCalled();
   });
-  it.todo('uses "repeatConfig" to determine how many times to repeat');
+  it('uses "repeatConfig" to determine count or delay of repetitions', () => {
+    const next = jest.fn();
+    const complete = jest.fn();
+    const error = jest.fn();
+    const factory = jest.fn((n:number) => of(n));
+
+    const observable = loop(factory, {count: 3});
+    expect(factory).not.toHaveBeenCalled();
+    observable.subscribe({next, error, complete});
+    expect(factory).toHaveBeenCalledTimes(3);
+    expect(factory).toHaveBeenNthCalledWith(1, 0);
+    expect(factory).toHaveBeenNthCalledWith(2, 1);
+    expect(factory).toHaveBeenNthCalledWith(3, 2);
+    expect(next).toHaveBeenCalledTimes(3);
+    expect(next).toHaveBeenNthCalledWith(1, 0);
+    expect(next).toHaveBeenNthCalledWith(2, 1);
+    expect(next).toHaveBeenNthCalledWith(3, 2);
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(error).not.toHaveBeenCalled();
+  });
 });
 
 describe('loopScan', () => {
@@ -133,5 +152,23 @@ describe('loopScan', () => {
     expect(error).toHaveBeenCalledTimes(1);
     expect(error).toHaveBeenCalledWith('error');
   });
-  it.todo('uses "repeatConfig" to determine how many times to repeat');
+  it('uses "repeatConfig" to determine count or delay of repetitions', () => {
+    const next = jest.fn();
+    const complete = jest.fn();
+    const error = jest.fn();
+    const factory = jest.fn((n:number) => of(n + 2));
+    const observable = loopScan(factory, 0, {count: 3});
+    expect(factory).not.toHaveBeenCalled();
+    observable.subscribe({next, error, complete});
+    expect(factory).toHaveBeenCalledTimes(3);
+    expect(factory).toHaveBeenNthCalledWith(1, 0, 0);
+    expect(factory).toHaveBeenNthCalledWith(2, 2, 1);
+    expect(factory).toHaveBeenNthCalledWith(3, 4, 2);
+    expect(next).toHaveBeenCalledTimes(3);
+    expect(next).toHaveBeenNthCalledWith(1, 2);
+    expect(next).toHaveBeenNthCalledWith(2, 4);
+    expect(next).toHaveBeenNthCalledWith(3, 6);
+    expect(complete).toHaveBeenCalledTimes(1);
+    expect(error).not.toHaveBeenCalled();
+  });
 });
