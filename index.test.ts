@@ -1,5 +1,5 @@
 import { Subject } from "rxjs";
-import { loop } from ".";
+import { loop, loopScan } from ".";
 
 describe('loop', () => {
   it('creates an observable from a factory function', () => {
@@ -71,7 +71,67 @@ describe('loop', () => {
 });
 
 describe('loopScan', () => {
-  it.todo('creates an observable from a factory function and a seed value');
-  it.todo('when a generated observable ends, it calls the factory function with an incremented index and the last emitted value');
-  it.todo('when a generated observable errors, it errors the observable');
+  it('creates an observable from a factory function and a seed value', () => {
+    const subject = new Subject<string>();
+    const next = jest.fn();
+    const complete = jest.fn();
+    const error = jest.fn();
+    const factory = jest.fn(() => subject);
+
+    const observable = loopScan(factory, 'A');
+    expect(factory).not.toHaveBeenCalled();
+    const subscription = observable.subscribe({next, error, complete});
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(factory).toHaveBeenCalledWith('A', 0);
+
+    expect(next).not.toHaveBeenCalled();
+
+    subject.next('B');
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(next).toHaveBeenCalledWith('B');
+    subscription.unsubscribe();
+    expect(complete).not.toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
+    
+  });
+  it('when a generated observable ends, it calls the factory function with an incremented index and the last emitted value', () => {
+    const subj1 = new Subject<string>();
+    const subj2 = new Subject<string>();
+    const next = jest.fn();
+    const complete = jest.fn();
+    const error = jest.fn();
+    const factory = jest.fn(() => subj2).mockReturnValueOnce(subj1);
+
+    const observable = loopScan(factory, 'A');
+    const subscription = observable.subscribe({next, error, complete});
+    subj1.next('B');
+
+    expect(factory).toHaveBeenCalledTimes(1);
+    subj1.complete();
+    expect(factory).toHaveBeenCalledTimes(2);
+    expect(factory).toHaveBeenCalledWith('B', 1);
+
+    subj2.next('C');
+    expect(next).toHaveBeenCalledTimes(2);
+    expect(next).toHaveBeenCalledWith('C');
+    
+    subscription.unsubscribe();
+    expect(complete).not.toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
+
+  });
+  it('when a generated observable errors, it errors the observable', () => {
+    const subj = new Subject<string>();
+    const next = jest.fn();
+    const complete = jest.fn();
+    const error = jest.fn();
+    const factory = jest.fn(() => subj);
+    const observable = loopScan(factory, 'A');
+    observable.subscribe({next, error, complete});
+    expect(error).not.toHaveBeenCalled();
+    subj.error('error');
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(error).toHaveBeenCalledWith('error');
+  });
+  it.todo('uses "repeatConfig" to determine how many times to repeat');
 });
